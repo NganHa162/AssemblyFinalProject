@@ -6,7 +6,7 @@
 .data
 table: .byte 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F 	# from 0 to 9 to display 7 segments
 day_in_month: .word 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31		# numbers of days in each month
-day_in_month_leaf: .word 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31	# numbers of days in each month of leaf year
+day_in_month_leap: .word 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31	# numbers of days in each month of leap year
 
 .text
 main:
@@ -148,13 +148,13 @@ continue_get_hour:
 	
 	
 get_year_month_day:
+# Get the year, month, day from total second in s0 and assign to a0, a2, a1
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	jal get_hour		# Get_hour to check the flag s11 for next day
 	lw ra, 0(sp)
 	addi sp, sp, 4
 	
-# Get the year, month, day from total second in s0 and assign to a0
 	li t0, 86400		# 86400 seconds in a day
 	div t1, s0, t0		# Get the number of days from 1970 to present
 	addi t1, t1, 1
@@ -189,7 +189,7 @@ continue:
 	remu a1, t1, t0		
 	
 	li t6, 0		# index
-	j check_leaf		# load day list to t2
+	j check_leap		# load day list to t2
 continue_get_day:
 loop:
 	slli t3, t6, 2
@@ -213,20 +213,20 @@ play_sound:
 	ecall
 	j continue_polling
 	
-check_leaf:
+check_leap:
 # Check year stored in a0
 	li t0, 4
 	remu t1, a0, t0
-	bne t1, zero, end_not_leaf
+	bne t1, zero, end_not_leap
 	li t0, 100
 	remu t1, a0, t0
-	bne t1, zero, end_leaf
+	bne t1, zero, end_leap
 	li t0, 400
 	rem t1, a0, t0
-	bne t1, zero, end_not_leaf
-end_leaf:
-	la t2, day_in_month_leaf
+	bne t1, zero, end_not_leap
+end_leap:
+	la t2, day_in_month_leap
 	j continue_get_day
-end_not_leaf:
+end_not_leap:
 	la t2, day_in_month
 	j continue_get_day
